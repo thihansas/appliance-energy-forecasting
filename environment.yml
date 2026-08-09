@@ -1,0 +1,16 @@
+name: appliance-energy-forecasting
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy
+  - pandas
+  - matplotlib
+  - scikit-learn
+  - statsmodels
+  - xgboost
+  - pytest
+  - pip
+  - pip:
+      - chronos-forecasting
+      - torch
