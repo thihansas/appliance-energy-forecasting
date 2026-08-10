@@ -24,6 +24,11 @@ in a sandboxed grading/CI environment. A stub is provided below
 (`forecast_with_timegpt`) for students who have their own API key.
 """
 
+import os
+os.environ["USE_TF"] = "0"
+os.environ["USE_TORCH"] = "1"
+os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+
 import numpy as np
 import pandas as pd
 
@@ -32,21 +37,37 @@ from .. import config
 
 
 def _try_chronos(y_train: pd.Series, horizon: int, index) -> pd.Series:
+    import os
+    os.environ["USE_TF"] = "0"
+    os.environ["USE_TORCH"] = "1"
+    os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+    print("In _try_chronos: importing torch and chronos...")
     import torch
     from chronos import ChronosPipeline
 
+    print("In _try_chronos: loading pretrained chronos-t5-tiny...")
     pipeline = ChronosPipeline.from_pretrained(
-        "amazon/chronos-t5-small",
+        "amazon/chronos-t5-tiny",
         device_map="cpu",
         torch_dtype=torch.float32,
     )
 
-    context = torch.tensor(y_train.values, dtype=torch.float32)
-    forecast = pipeline.predict(context, prediction_length=horizon)
-    # forecast shape: [num_series, num_samples, horizon] -> take the median
-    median = np.median(forecast[0].numpy(), axis=0)
+    print("In _try_chronos: running predictions...")
+    preds = []
+    # Retain up to 512 historical context points
+    context = list(y_train.values[-512:])
+    step_size = 24
 
-    return pd.Series(median, index=index, name="foundation_model")
+    for i in range(0, horizon, step_size):
+        h = min(step_size, horizon - i)
+        ctx_tensor = torch.tensor(context, dtype=torch.float32)
+        forecast = pipeline.predict(ctx_tensor, prediction_length=h, num_samples=20)
+        median = np.median(forecast[0].numpy(), axis=0)
+        preds.extend(median)
+        context.extend(median)
+
+    print("In _try_chronos: completed successfully!")
+    return pd.Series(preds[:horizon], index=index, name="foundation_model")
 
 
 def _try_timesfm(y_train: pd.Series, horizon: int, index) -> pd.Series:

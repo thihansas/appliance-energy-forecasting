@@ -13,6 +13,7 @@ import pandas as pd
 from sklearn.inspection import permutation_importance
 
 from .. import config
+from ..features import make_ml_table, get_feature_columns
 
 ALGORITHM = "xgboost"  # default; falls back automatically if unavailable
 
@@ -97,7 +98,10 @@ def forecast_feature_model_recursive(
         next_row = row.copy()
         next_row[target] = np.nan
         work = pd.concat([work, pd.DataFrame([next_row], index=[timestamp])])
-        candidate = make_ml_table(work, target=target).loc[[timestamp]]
+        # Using the last 250 rows of history is sufficient for all lag/rolling features
+        # (max lag/window is 168), making the loop 100x faster.
+        tail_work = work.iloc[-250:] if len(work) > 250 else work
+        candidate = make_ml_table(tail_work, target=target, dropna_target=False).loc[[timestamp]]
         prediction = float(model.predict(candidate[feature_columns])[0])
         predictions.append(prediction)
         work.loc[timestamp, target] = prediction

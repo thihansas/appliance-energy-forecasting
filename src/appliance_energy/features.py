@@ -62,7 +62,7 @@ def add_rolling_features(df: pd.DataFrame, target: str = config.TARGET,
 
 
 def make_ml_table(df: pd.DataFrame, target: str = config.TARGET,
-                   lags=None, windows=None) -> pd.DataFrame:
+                   lags=None, windows=None, dropna_target: bool = True) -> pd.DataFrame:
     """
     Build the full supervised-learning feature table used by the
     feature-based model (Part 5 + Part 6): original sensor/weather columns,
@@ -72,7 +72,10 @@ def make_ml_table(df: pd.DataFrame, target: str = config.TARGET,
     out = add_time_features(df)
     out = add_lag_features(out, target=target, lags=lags)
     out = add_rolling_features(out, target=target, windows=windows)
-    return out.dropna()
+    feature_cols = [c for c in out.columns if c != target]
+    if dropna_target:
+        return out.dropna()
+    return out.dropna(subset=feature_cols)
 
 
 def get_feature_columns(ml_table: pd.DataFrame, target: str = config.TARGET) -> list:
