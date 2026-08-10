@@ -17,6 +17,18 @@ The main questions are:
 5. Does a time-series foundation model such as Chronos, TimesFM, or TimeGPT provide any additional benefit?
 6. Which model would be most suitable for a practical smart-home energy forecasting system?
 
+## Current implementation status
+
+The repository now contains a runnable end-to-end pipeline for the assignment. Running `python scripts/run_pipeline.py` downloads or loads the UCI dataset, resamples it to hourly frequency, fits benchmark forecasts, fits a SARIMAX model, fits a feature-based regressor, and evaluates all models on the final 14-day hold-out window. The generated outputs are stored under `outputs/` and the written report is available at `reports/report.md` and `reports/report.docx`.
+
+A typical run produces:
+
+- `outputs/forecasts/all_forecasts.csv`
+- `outputs/metrics/model_comparison.csv`
+- `outputs/figures/forecast_comparison.png`
+- `outputs/figures/sarimax_forecast_ci.png`
+- `outputs/figures/feature_importance.png`
+
 ## Dataset
 
 The dataset used in this project is the **Appliances Energy Prediction** dataset.

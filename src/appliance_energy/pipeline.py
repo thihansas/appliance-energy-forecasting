@@ -136,20 +136,28 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
     ml_table = features.make_ml_table(df, target=config.TARGET)
     feature_cols = features.get_feature_columns(ml_table, target=config.TARGET)
 
-    ml_train = ml_table.iloc[:-config.TEST_STEPS]
-    ml_test = ml_table.iloc[-config.TEST_STEPS:]
+    # Train only on observations before the hold-out.  The recursive forecast
+    # below is essential: constructing ``ml_test`` from the complete dataset
+    # would expose realised test targets through lag/rolling features.
+    ml_train = ml_table[ml_table.index < test.index[0]]
 
     fm = feature_models.fit_feature_model(
         X_train=ml_train[feature_cols], y_train=ml_train[config.TARGET],
         algorithm=feature_algorithm,
     )
-    feature_pred = feature_models.forecast_feature_model(
-        model=fm, X_test=ml_test[feature_cols], index=ml_test.index,
+    feature_pred = feature_models.forecast_feature_model_recursive(
+        model=fm,
+        history=df.loc[df.index < test.index[0]],
+        future=df.loc[test.index],
+        target=config.TARGET,
+        feature_columns=feature_cols,
     )
     forecasts["feature_model"] = feature_pred.reindex(test.index)
 
     try:
-        importances = feature_models.get_feature_importance(fm, feature_cols)
+        importances = feature_models.get_feature_importance(
+            fm, feature_cols, X=ml_train[feature_cols], y=ml_train[config.TARGET],
+        )
         importances.to_csv(config.METRICS_DIR / "feature_importance.csv", header=["importance"])
 
         fig = plotting.plot_feature_importance(importances)
