@@ -41,32 +41,30 @@ def _try_chronos(y_train: pd.Series, horizon: int, index) -> pd.Series:
     os.environ["USE_TF"] = "0"
     os.environ["USE_TORCH"] = "1"
     os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-    print("In _try_chronos: importing torch and chronos...")
     import torch
     from chronos import ChronosPipeline
 
-    print("In _try_chronos: loading pretrained chronos-t5-tiny...")
+    print("In _try_chronos: loading pretrained chronos-t5-tiny...", flush=True)
     pipeline = ChronosPipeline.from_pretrained(
         "amazon/chronos-t5-tiny",
         device_map="cpu",
-        torch_dtype=torch.float32,
+        dtype=torch.float32,
     )
 
-    print("In _try_chronos: running predictions...")
+    print("In _try_chronos: running fast predictions...", flush=True)
     preds = []
-    # Retain up to 512 historical context points
-    context = list(y_train.values[-512:])
-    step_size = 24
+    context = np.ascontiguousarray(y_train.values[-512:], dtype=np.float32)
+    step_size = 48
 
     for i in range(0, horizon, step_size):
         h = min(step_size, horizon - i)
-        ctx_tensor = torch.tensor(context, dtype=torch.float32)
-        forecast = pipeline.predict(ctx_tensor, prediction_length=h, num_samples=20)
-        median = np.median(forecast[0].numpy(), axis=0)
-        preds.extend(median)
-        context.extend(median)
+        ctx_tensor = torch.from_numpy(context).unsqueeze(0)
+        forecast = pipeline.predict(ctx_tensor, prediction_length=h, num_samples=1)
+        pred_vals = forecast[0, 0].numpy()
+        preds.extend(pred_vals)
+        context = np.append(context, pred_vals)
 
-    print("In _try_chronos: completed successfully!")
+    print("In _try_chronos: completed successfully!", flush=True)
     return pd.Series(preds[:horizon], index=index, name="foundation_model")
 
 
