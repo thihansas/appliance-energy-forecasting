@@ -1,8 +1,3 @@
-"""
-tests/test_evaluation.py
-==========================
-Tests for evaluation metrics.
-"""
 
 import sys
 from pathlib import Path
@@ -13,7 +8,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from appliance_energy import evaluation  # noqa: E402
+from appliance_energy import evaluation  
 
 
 def test_mase_is_zero_for_perfect_forecast():
@@ -28,9 +23,7 @@ def test_mase_is_zero_for_perfect_forecast():
 
 
 def test_mase_is_one_for_seasonal_naive_on_training_pattern():
-    # A perfectly repeating daily series: seasonal naive should be near-perfect,
-    # giving MASE close to 0, not testing that here since it's covered above.
-    # Instead check that a "shifted" (constant offset) forecast gives a MASE > 0.
+   
     idx = pd.date_range("2020-01-01", periods=200, freq="h")
     y_train = pd.Series(10 + 5 * np.sin(2 * np.pi * np.arange(200) / 24), index=idx)
 
@@ -56,7 +49,7 @@ def test_evaluate_forecast_drops_misaligned_missing_points():
     y_train = pd.Series(np.arange(50, dtype=float))
 
     y_pred = y_true.copy()
-    y_pred.iloc[:3] = np.nan  # simulate a feature model that needs warm-up
+    y_pred.iloc[:3] = np.nan  
 
     result = evaluation.evaluate_forecast("test_model", y_true, y_pred, y_train, seasonality=5)
     assert result["n_points"] == 7

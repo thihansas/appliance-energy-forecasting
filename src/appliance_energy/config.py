@@ -1,18 +1,7 @@
-"""
-config.py
-=========
-Central configuration for the appliance-energy-forecasting project.
-
-Keeping paths and constants in one place means every module and script
-(pipeline.py, notebooks, tests) refers to the same values, so changing the
-test window, the seasonal periods, or a directory only has to happen once.
-"""
 
 from pathlib import Path
 
-# ------------------------------------------------------------------
 # Paths
-# ------------------------------------------------------------------
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -31,9 +20,7 @@ for path in [RAW_DIR, INTERIM_DIR, PROCESSED_DIR,
              FORECAST_DIR, METRICS_DIR, FIGURE_DIR, MODEL_DIR]:
     path.mkdir(parents=True, exist_ok=True)
 
-# ------------------------------------------------------------------
 # Data source
-# ------------------------------------------------------------------
 
 DATA_URL = (
     "https://archive.ics.uci.edu/ml/machine-learning-databases/"
@@ -43,9 +30,7 @@ DATA_URL = (
 RAW_FILENAME = "energydata_complete.csv"
 HOURLY_FILENAME = "appliance_hourly.csv"
 
-# ------------------------------------------------------------------
 # Modelling constants
-# ------------------------------------------------------------------
 
 TARGET = "Appliances"
 
@@ -75,12 +60,10 @@ SARIMAX_P_RANGE = range(0, 7)
 SARIMAX_D_RANGE = range(0, 3)
 SARIMAX_Q_RANGE = range(0, 7)
 
-# Seasonal order kept fixed (daily seasonality) to keep the grid search
-# tractable; students can extend this to loop over (P, D, Q) too.
+
 SARIMAX_SEASONAL_ORDER = (1, 1, 1, DAILY_PERIOD)
 
 # A reduced grid used by default (full grid is 7*3*7=147 fits and is slow -
-# see models/sarimax.py:grid_search_sarimax(quick=False) for the full grid)
 QUICK_P_RANGE = range(0, 3)
 QUICK_D_RANGE = range(0, 2)
 QUICK_Q_RANGE = range(0, 3)

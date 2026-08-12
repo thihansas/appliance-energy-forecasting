@@ -1,8 +1,3 @@
-"""
-tests/test_benchmarks.py
-==========================
-Tests for the benchmark forecasting functions.
-"""
 
 import sys
 from pathlib import Path
@@ -13,13 +8,13 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from appliance_energy.models import benchmarks  # noqa: E402
+from appliance_energy.models import benchmarks  
 
 
 @pytest.fixture
 def toy_series():
     idx = pd.date_range("2020-01-01", periods=200, freq="h")
-    # Simple deterministic daily seasonal pattern for predictable tests.
+    
     values = 10 + 5 * np.sin(2 * np.pi * np.arange(200) / 24)
     return pd.Series(values, index=idx, name="Appliances")
 
@@ -56,12 +51,12 @@ def test_seasonal_naive_matches_expected_lag(toy_series):
     forecast = benchmarks.seasonal_naive_forecast(
         toy_series, horizon, future_index, seasonality=24
     )
-    # First forecast step should equal the value 24 steps before the end of train.
+    
     assert forecast.iloc[0] == pytest.approx(toy_series.iloc[-24])
 
 
 def test_drift_forecast_extrapolates_slope(toy_series):
-    # A perfectly linear series should be forecast exactly by drift.
+    
     idx = pd.date_range("2020-01-01", periods=50, freq="h")
     linear = pd.Series(np.arange(50, dtype=float), index=idx)
 

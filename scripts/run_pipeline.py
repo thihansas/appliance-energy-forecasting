@@ -1,18 +1,3 @@
-#!/usr/bin/env python
-"""
-scripts/run_pipeline.py
-========================
-Command-line entry point that runs the full reproducible pipeline
-(Parts 1-9 of the assignment) and writes forecasts, metrics and figures
-to outputs/.
-
-Usage:
-    python scripts/run_pipeline.py
-    python scripts/run_pipeline.py --grid-search            # SARIMAX (p,d,q) AIC search
-    python scripts/run_pipeline.py --grid-search --full-grid
-    python scripts/run_pipeline.py --feature-model lightgbm
-    python scripts/run_pipeline.py --foundation-backend chronos
-"""
 
 import argparse
 import sys

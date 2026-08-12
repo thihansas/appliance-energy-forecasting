@@ -1,14 +1,3 @@
-#!/usr/bin/env python
-"""
-scripts/make_features.py
-==========================
-Standalone script to build and save the feature-engineered supervised
-learning table used by the feature-based model (Part 5/6), without running
-the full pipeline. Useful for inspecting features before modelling.
-
-Usage:
-    python scripts/make_features.py
-"""
 
 import sys
 from pathlib import Path

@@ -1,20 +1,3 @@
-"""
-pipeline.py
-===========
-End-to-end orchestration of Parts 1-9 of the assignment:
-
-  1. Load data
-  2. Define train/test split and forecast horizon
-  3. Benchmark models
-  4. SARIMAX (grid search + fit + forecast + diagnostics)
-  5. Covariate/feature engineering
-  6. Feature-based model
-  7. Foundation model
-  8. Evaluation of all models
-  9. Save forecasts, metrics, figures
-
-Run with:  python scripts/run_pipeline.py
-"""
 
 import json
 
@@ -28,28 +11,9 @@ from .models import benchmarks, sarimax as sarimax_model, feature_models, founda
 def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
                   feature_algorithm: str = "xgboost",
                   foundation_backend: str = "auto") -> dict:
-    """
-    Run the full pipeline and save all outputs to outputs/.
 
-    Parameters
-    ----------
-    run_sarimax_grid_search : bool
-        If True, run the (p,d,q) AIC grid search (Part 4) before fitting the
-        final SARIMAX model, and save the grid to
-        outputs/metrics/sarimax_grid_search.csv. This can be slow, so it
-        defaults to off; scripts/run_pipeline.py exposes a --grid-search flag.
-    quick_grid : bool
-        Passed through to grid_search_sarimax - use the small default range
-        instead of the full assignment-specified 7x3x7 grid.
-    feature_algorithm : str
-        "xgboost", "lightgbm", "random_forest", or "hist_gbr".
-    foundation_backend : str
-        "auto", "chronos", or "timesfm".
-    """
-
-    # ----------------------------------------------------------
     # Part 1: load data
-    # ----------------------------------------------------------
+
     df = data.load_appliance_data()
     y = df[config.TARGET]
 
@@ -74,29 +38,29 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
     except Exception as exc:
         print(f"Seasonal decomposition skipped: {exc}")
 
-    # ----------------------------------------------------------
+    
     # Part 2: forecasting problem definition (train/test split)
-    # ----------------------------------------------------------
+    
     train = y.iloc[:-config.TEST_STEPS]
     test = y.iloc[-config.TEST_STEPS:]
-    horizon = config.HORIZON  # 24h forecast horizon, evaluated over the 14-day test window
+    horizon = config.HORIZON  
 
     print(f"\nTrain: {train.index.min()} -> {train.index.max()} ({len(train)} obs)")
     print(f"Test:  {test.index.min()} -> {test.index.max()} ({len(test)} obs)")
 
     forecasts = {}
 
-    # ----------------------------------------------------------
+    
     # Part 3: benchmark models
-    # ----------------------------------------------------------
+    
     forecasts.update(benchmarks.all_benchmark_forecasts(
         y_train=train, horizon=len(test), index=test.index,
         daily_period=config.DAILY_PERIOD, weekly_period=config.WEEKLY_PERIOD,
     ))
 
-    # ----------------------------------------------------------
+    
     # Part 4/5: SARIMAX with selected exogenous variables
-    # ----------------------------------------------------------
+    
     exog_full = features.get_exog_columns(df)
     X_train = exog_full.iloc[:-config.TEST_STEPS]
     X_test = exog_full.iloc[-config.TEST_STEPS:]
@@ -130,15 +94,12 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
         json.dump(resid_summary, f, indent=2)
     print("\nSARIMAX residual diagnostics:", resid_summary)
 
-    # ----------------------------------------------------------
+    
     # Part 5/6: feature-based model
-    # ----------------------------------------------------------
+    
     ml_table = features.make_ml_table(df, target=config.TARGET)
     feature_cols = features.get_feature_columns(ml_table, target=config.TARGET)
-
-    # Train only on observations before the hold-out.  The recursive forecast
-    # below is essential: constructing ``ml_test`` from the complete dataset
-    # would expose realised test targets through lag/rolling features.
+    
     ml_train = ml_table[ml_table.index < test.index[0]]
 
     fm = feature_models.fit_feature_model(
@@ -171,16 +132,15 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
     except AttributeError as exc:
         print(f"Feature importance not available for this model: {exc}")
 
-    # ----------------------------------------------------------
     # Part 7: foundation model
-    # ----------------------------------------------------------
+
     forecasts["foundation_model"] = foundation.forecast_foundation_model(
         y_train=train, horizon=len(test), index=test.index, backend=foundation_backend,
     )
 
-    # ----------------------------------------------------------
+
     # Part 8: evaluate everything
-    # ----------------------------------------------------------
+   
     results_df = evaluation.evaluate_all(
         forecasts=forecasts, y_true=test, y_train=train, seasonality=config.DAILY_PERIOD,
     )
@@ -196,9 +156,9 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
     )
     print(f"\nStrongest benchmark model: {strongest_benchmark}")
 
-    # ----------------------------------------------------------
+  
     # Save outputs
-    # ----------------------------------------------------------
+    
     forecast_df = pd.DataFrame({"actual": test})
     for name, pred in forecasts.items():
         forecast_df[name] = pred.reindex(test.index)

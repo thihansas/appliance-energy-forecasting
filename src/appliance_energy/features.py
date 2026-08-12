@@ -1,15 +1,3 @@
-"""
-features.py
-============
-Feature engineering for the feature-based model and for SARIMAX exogenous
-variables (Part 5 of the assignment).
-
-Rule followed throughout: any feature derived from the target variable is
-built on `.shift(1)` first, so a feature for time t never uses the value of
-Appliances at time t or later. This avoids the data-leakage failure mode
-called out explicitly in the README ("Using future values of Appliances in
-lag or rolling features").
-"""
 
 import numpy as np
 import pandas as pd
@@ -21,11 +9,7 @@ DEFAULT_WINDOWS = [3, 6, 12, 24, 168]
 
 
 def add_time_features(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Cyclical time-of-day and day-of-week features. These are known at the
-    forecast origin for any future timestamp, so they never leak information
-    from the target.
-    """
+    
     out = df.copy()
 
     out["hour"] = out.index.hour
@@ -63,12 +47,7 @@ def add_rolling_features(df: pd.DataFrame, target: str = config.TARGET,
 
 def make_ml_table(df: pd.DataFrame, target: str = config.TARGET,
                    lags=None, windows=None, dropna_target: bool = True) -> pd.DataFrame:
-    """
-    Build the full supervised-learning feature table used by the
-    feature-based model (Part 5 + Part 6): original sensor/weather columns,
-    time features, lag features and rolling features, with rows containing
-    NaNs (from the longest lag/window) dropped.
-    """
+    
     out = add_time_features(df)
     out = add_lag_features(out, target=target, lags=lags)
     out = add_rolling_features(out, target=target, windows=windows)
@@ -83,10 +62,7 @@ def get_feature_columns(ml_table: pd.DataFrame, target: str = config.TARGET) -> 
 
 
 def get_exog_columns(df: pd.DataFrame) -> list:
-    """
-    Build the exogenous feature set for SARIMAX: candidate weather columns
-    that are actually present in the data, plus cyclical time features.
-    """
+    
     exog_df = add_time_features(df)
     weather_cols = [c for c in config.CANDIDATE_EXOG_COLS if c in df.columns]
     time_cols = ["hour_sin", "hour_cos", "dow_sin", "dow_cos"]

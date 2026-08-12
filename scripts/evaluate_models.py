@@ -1,14 +1,4 @@
 #!/usr/bin/env python
-"""
-scripts/evaluate_models.py
-============================
-Recompute evaluation metrics and comparison plots from a saved
-all_forecasts.csv, without re-running the whole pipeline (e.g. after
-manually tweaking a forecast). Useful for quickly iterating on Part 8.
-
-Usage:
-    python scripts/evaluate_models.py
-"""
 
 import sys
 from pathlib import Path

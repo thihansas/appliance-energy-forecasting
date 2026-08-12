@@ -1,9 +1,3 @@
-"""
-data.py
-=======
-Data acquisition, cleaning, resampling and stationarity testing for the
-Appliances Energy Prediction dataset (Part 1 of the assignment).
-"""
 
 import numpy as np
 import pandas as pd
@@ -13,15 +7,7 @@ from . import config
 
 
 def download_raw_data(force: bool = False) -> pd.DataFrame:
-    """
-    Download the raw 10-minute Appliances Energy Prediction dataset from
-    UCI and cache it locally under data/raw/.
-
-    Parameters
-    ----------
-    force : bool
-        If True, re-download even if a cached copy exists.
-    """
+   
     raw_path = config.RAW_DIR / config.RAW_FILENAME
 
     if raw_path.exists() and not force:
@@ -36,14 +22,7 @@ def download_raw_data(force: bool = False) -> pd.DataFrame:
 
 
 def clean_and_resample(df: pd.DataFrame, freq: str = "h") -> pd.DataFrame:
-    """
-    Parse the timestamp, coerce numeric columns, drop rows with a missing
-    target, and resample the 10-minute data to an hourly mean.
-
-    Missing values created by resampling gaps are filled with time-based
-    interpolation, which is appropriate for smoothly varying sensor and
-    energy-use series over short gaps.
-    """
+    
     df = df.copy()
 
     df["date"] = pd.to_datetime(df["date"])
@@ -69,10 +48,7 @@ def clean_and_resample(df: pd.DataFrame, freq: str = "h") -> pd.DataFrame:
 
 
 def load_appliance_data(force_download: bool = False) -> pd.DataFrame:
-    """
-    Full Part 1 loading routine: download (or use cache) -> clean ->
-    resample to hourly -> cache processed file -> return.
-    """
+    
     processed_path = config.PROCESSED_DIR / config.HOURLY_FILENAME
 
     if processed_path.exists() and not force_download:
@@ -88,17 +64,10 @@ def load_appliance_data(force_download: bool = False) -> pd.DataFrame:
 
     return hourly
 
-
-# ------------------------------------------------------------------
 # Stationarity testing
-# ------------------------------------------------------------------
 
 def adf_test(series: pd.Series, name: str = "") -> dict:
-    """
-    Augmented Dickey-Fuller test.
-    Null hypothesis: series has a unit root (is non-stationary).
-    A small p-value (< 0.05) => reject H0 => series is stationary.
-    """
+    
     result = adfuller(series.dropna(), autolag="AIC")
     out = {
         "series": name,
@@ -113,12 +82,7 @@ def adf_test(series: pd.Series, name: str = "") -> dict:
 
 
 def kpss_test(series: pd.Series, name: str = "", regression: str = "c") -> dict:
-    """
-    KPSS test.
-    Null hypothesis: series is stationary (around a constant, if
-    regression='c', or around a trend, if regression='ct').
-    A small p-value (< 0.05) => reject H0 => series is non-stationary.
-    """
+  
     statistic, p_value, n_lags, crit = kpss(
         series.dropna(), regression=regression, nlags="auto"
     )
@@ -135,11 +99,7 @@ def kpss_test(series: pd.Series, name: str = "", regression: str = "c") -> dict:
 
 
 def stationarity_report(series: pd.Series, name: str = "Appliances") -> pd.DataFrame:
-    """
-    Combine ADF and KPSS results (Part 1 / Part 4 stationarity checks).
-    Using both tests together is more informative than either alone,
-    since they have opposite null hypotheses.
-    """
+  
     rows = [adf_test(series, name), kpss_test(series, name)]
 
     diffed = series.diff().dropna()

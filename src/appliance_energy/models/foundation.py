@@ -1,28 +1,3 @@
-"""
-models/foundation.py
-=====================
-Time-series foundation model wrapper (Part 7). This is a *target-only,
-zero-shot* forecaster: it is given the historical Appliances series and
-asked to forecast the next `horizon` steps, with no covariates, no
-fine-tuning, and no access to future sensor/weather readings. That scope
-should be stated explicitly in the report.
-
-Three backends are supported, tried in this order:
-  1. Chronos (Amazon, via the `chronos-forecasting` package)
-  2. TimesFM (Google, via the `timesfm` package)
-  3. Fallback: daily seasonal naive (so the pipeline always runs even
-     without GPU/model downloads available)
-
-Install one of:
-    pip install chronos-forecasting torch
-    pip install timesfm
-
-Notes on TimeGPT: the Nixtla TimeGPT API (`nixtla` package) is also a
-valid choice for this part of the assignment but requires an API key and
-network access to Nixtla's servers, which will typically not be available
-in a sandboxed grading/CI environment. A stub is provided below
-(`forecast_with_timegpt`) for students who have their own API key.
-"""
 
 import os
 os.environ["USE_TF"] = "0"
@@ -89,12 +64,7 @@ def _try_timesfm(y_train: pd.Series, horizon: int, index) -> pd.Series:
 
 def forecast_with_timegpt(y_train: pd.Series, horizon: int, index,
                            api_key: str = None) -> pd.Series:
-    """
-    Optional TimeGPT backend. Requires `pip install nixtla` and a Nixtla
-    API key (set NIXTLA_API_KEY env var or pass api_key=...). Not called by
-    default in forecast_foundation_model() since it needs external network
-    access and a key that graders may not have configured.
-    """
+   
     from nixtla import NixtlaClient
 
     client = NixtlaClient(api_key=api_key)
@@ -106,11 +76,7 @@ def forecast_with_timegpt(y_train: pd.Series, horizon: int, index,
 
 def forecast_foundation_model(y_train: pd.Series, horizon: int, index,
                                backend: str = "auto") -> pd.Series:
-    """
-    Try the requested backend; fall back to a daily seasonal naive forecast
-    (clearly labelled) if the model/package isn't available in the current
-    environment, so `scripts/run_pipeline.py` always completes end to end.
-    """
+   
     backends_to_try = (
         ["chronos", "timesfm"] if backend == "auto" else [backend]
     )

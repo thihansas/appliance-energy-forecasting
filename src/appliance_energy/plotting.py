@@ -1,10 +1,3 @@
-"""
-plotting.py
-===========
-All figure-generating functions, kept separate from modelling code so
-notebooks and scripts/evaluate_models.py can reuse them without duplicating
-matplotlib boilerplate.
-"""
 
 import numpy as np
 import pandas as pd
@@ -18,7 +11,7 @@ from . import config
 
 
 def plot_series_overview(series: pd.Series, title: str = "Appliance energy use"):
-    """Part 1: initial full-series plot."""
+    
     fig, ax = plt.subplots(figsize=(14, 5))
     series.plot(ax=ax, linewidth=0.8)
     ax.set_title(title)
@@ -30,7 +23,7 @@ def plot_series_overview(series: pd.Series, title: str = "Appliance energy use")
 
 def plot_seasonal_snapshot(series: pd.Series, days: int = 14,
                             title: str = "Recent appliance energy use"):
-    """Zoomed-in view to visually inspect daily/weekly seasonality."""
+    
     fig, ax = plt.subplots(figsize=(14, 5))
     series.tail(days * config.DAILY_PERIOD).plot(ax=ax)
     ax.set_title(title)
@@ -42,8 +35,7 @@ def plot_seasonal_snapshot(series: pd.Series, days: int = 14,
 
 def plot_acf_pacf(series: pd.Series, lags: int = 72,
                    title_prefix: str = "Appliances"):
-    """Part 1 / Part 4: ACF and PACF plots to identify AR/MA order and
-    seasonal structure."""
+    
     fig, axes = plt.subplots(2, 1, figsize=(12, 8))
     plot_acf(series.dropna(), lags=lags, ax=axes[0])
     axes[0].set_title(f"{title_prefix}: ACF")
@@ -54,7 +46,7 @@ def plot_acf_pacf(series: pd.Series, lags: int = 72,
 
 
 def plot_decomposition(decomposition, title: str = "Seasonal decomposition"):
-    """Plot a statsmodels DecomposeResult (trend / seasonal / residual)."""
+    
     fig = decomposition.plot()
     fig.set_size_inches(12, 8)
     fig.suptitle(title)
@@ -64,7 +56,7 @@ def plot_decomposition(decomposition, title: str = "Seasonal decomposition"):
 
 def plot_forecasts(train: pd.Series, test: pd.Series, forecast_df: pd.DataFrame,
                     context_days: int = 14, title: str = "Appliance energy forecasting"):
-    """Part 3/4/6/7/8: overlay all model forecasts against the actual test data."""
+    
     fig, ax = plt.subplots(figsize=(14, 7))
 
     train.tail(context_days * config.DAILY_PERIOD).plot(
@@ -88,7 +80,7 @@ def plot_forecasts(train: pd.Series, test: pd.Series, forecast_df: pd.DataFrame,
 def plot_forecast_with_ci(test: pd.Series, mean_forecast: pd.Series,
                            lower: pd.Series, upper: pd.Series,
                            title: str = "SARIMAX forecast with 95% CI"):
-    """Part 4: SARIMAX forecast with confidence interval band."""
+    
     fig, ax = plt.subplots(figsize=(14, 5))
     test.plot(ax=ax, label="Actual", color="black", linewidth=2)
     mean_forecast.plot(ax=ax, label="SARIMAX forecast", color="tab:red")
@@ -104,7 +96,7 @@ def plot_forecast_with_ci(test: pd.Series, mean_forecast: pd.Series,
 
 def plot_residual_diagnostics(residuals: pd.Series, lags: int = 48,
                                title_prefix: str = "SARIMAX residuals"):
-    """Part 4: residual ACF + histogram, used to assess model fit."""
+    
     fig, axes = plt.subplots(1, 3, figsize=(16, 4))
 
     axes[0].plot(residuals.index, residuals.values, linewidth=0.8)
@@ -123,7 +115,7 @@ def plot_residual_diagnostics(residuals: pd.Series, lags: int = 48,
 
 def plot_error_diagnostics(test: pd.Series, forecast_df: pd.DataFrame,
                             title: str = "Forecast error by model"):
-    """Part 8: boxplot-style comparison of absolute errors across models."""
+    
     error_cols = [c for c in forecast_df.columns if c != "actual"]
     errors = pd.DataFrame({
         col: (forecast_df[col] - test).abs() for col in error_cols
@@ -139,7 +131,7 @@ def plot_error_diagnostics(test: pd.Series, forecast_df: pd.DataFrame,
 
 def plot_feature_importance(importances: pd.Series, top_n: int = 20,
                              title: str = "Feature importance"):
-    """Part 6: bar chart of the top-N most important features."""
+    
     top = importances.sort_values(ascending=True).tail(top_n)
 
     fig, ax = plt.subplots(figsize=(8, max(4, 0.3 * top_n)))
@@ -152,7 +144,7 @@ def plot_feature_importance(importances: pd.Series, top_n: int = 20,
 
 def plot_model_comparison_bar(results_df: pd.DataFrame, metric: str = "RMSE",
                                title: str = None):
-    """Part 8: bar chart comparing models on a chosen metric."""
+    
     title = title or f"Model comparison ({metric})"
     fig, ax = plt.subplots(figsize=(10, 5))
     ordered = results_df.sort_values(metric)
