@@ -45,9 +45,7 @@ def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
     train = y.iloc[:-config.TEST_STEPS]
     test = y.iloc[-config.TEST_STEPS:]
 
-    # Primary assignment horizon: first 24 hours of the test period.
-    # The full 14-day test period is retained separately as an extended
-    # long-horizon robustness/stress-test evaluation.
+
     horizon = config.HORIZON
     test_24 = test.iloc[:horizon]
 
@@ -169,11 +167,7 @@ def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
 
 
     # Part 8: evaluate everything
-    #
-    # Primary evaluation:
-    # The assignment specifies a 24-hour forecast horizon. Therefore,
-    # the first 24 observations of the 14-day hold-out period are used
-    # as the primary evaluation window.
+  
     results_24h = evaluation.evaluate_all(
         forecasts=forecasts,
         y_true=test_24,
@@ -210,8 +204,6 @@ def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
     )
 
     # Extended evaluation:
-    # The complete 14-day / 336-hour hold-out period is also retained
-    # as a long-horizon robustness/stress-test evaluation.
     results_df = evaluation.evaluate_all(
         forecasts=forecasts,
         y_true=test,
@@ -222,9 +214,7 @@ def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
     print("\n=== Extended 336-hour model comparison ===")
     print(results_df.round(3))
     
-        # ---------------------------------------------------------
     # Model comparison plots
-    # ---------------------------------------------------------
 
     # Primary 24-hour RMSE comparison
     fig = plotting.plot_model_comparison_bar(
@@ -254,12 +244,8 @@ def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
 
   
     # Save outputs
-    
-    # Save outputs
 
-    # ---------------------------------------------------------
     # Extended 336-hour / 14-day evaluation
-    # ---------------------------------------------------------
 
     forecast_df = pd.DataFrame({"actual": test})
 
@@ -278,9 +264,7 @@ def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
         index=False
     )
 
-    # ---------------------------------------------------------
     # Primary 24-hour assignment evaluation
-    # ---------------------------------------------------------
 
     forecast_df_24 = forecast_df.iloc[:horizon].copy()
 
@@ -293,9 +277,7 @@ def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
         index=False
     )
     
-        # ---------------------------------------------------------
     # 24-hour forecast plot
-    # ---------------------------------------------------------
 
     fig = plotting.plot_forecasts(
         train=train,
