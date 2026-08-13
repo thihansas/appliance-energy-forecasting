@@ -1,6 +1,7 @@
 
 import json
 
+from lightgbm import train
 import pandas as pd
 from statsmodels.tsa.seasonal import seasonal_decompose
 
@@ -8,7 +9,7 @@ from . import config, data, features, evaluation, plotting
 from .models import benchmarks, sarimax as sarimax_model, feature_models, foundation
 
 
-def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
+def run_pipeline(run_sarimax_grid_search: bool = True, quick_grid: bool = True,
                   feature_algorithm: str = "xgboost",
                   foundation_backend: str = "auto") -> dict:
 
@@ -43,10 +44,23 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
     
     train = y.iloc[:-config.TEST_STEPS]
     test = y.iloc[-config.TEST_STEPS:]
-    horizon = config.HORIZON  
+
+    # Primary assignment horizon: first 24 hours of the test period.
+    # The full 14-day test period is retained separately as an extended
+    # long-horizon robustness/stress-test evaluation.
+    horizon = config.HORIZON
+    test_24 = test.iloc[:horizon]
 
     print(f"\nTrain: {train.index.min()} -> {train.index.max()} ({len(train)} obs)")
     print(f"Test:  {test.index.min()} -> {test.index.max()} ({len(test)} obs)")
+    print(
+        f"Primary 24-hour forecast window: "
+        f"{test_24.index.min()} -> {test_24.index.max()} ({len(test_24)} obs)"
+    )
+    print(
+        f"Extended evaluation window: "
+        f"{test.index.min()} -> {test.index.max()} ({len(test)} obs)"
+)
 
     forecasts = {}
 
@@ -85,6 +99,21 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
 
     fig = plotting.plot_forecast_with_ci(test, sarimax_mean, sarimax_lower, sarimax_upper)
     fig.savefig(config.FIGURE_DIR / "sarimax_forecast_ci.png", dpi=200, bbox_inches="tight")
+    
+        # 24-hour SARIMAX forecast with 95% confidence interval
+    fig = plotting.plot_forecast_with_ci(
+        test_24,
+        sarimax_mean.iloc[:horizon],
+        sarimax_lower.iloc[:horizon],
+        sarimax_upper.iloc[:horizon],
+        title="SARIMAX 24-hour forecast with 95% confidence interval"
+    )
+
+    fig.savefig(
+        config.FIGURE_DIR / "sarimax_forecast_ci_24h.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
 
     fig = plotting.plot_residual_diagnostics(sarimax_fit.resid)
     fig.savefig(config.FIGURE_DIR / "residual_acf.png", dpi=200, bbox_inches="tight")
@@ -140,50 +169,161 @@ def run_pipeline(run_sarimax_grid_search: bool = False, quick_grid: bool = True,
 
 
     # Part 8: evaluate everything
-   
-    results_df = evaluation.evaluate_all(
-        forecasts=forecasts, y_true=test, y_train=train, seasonality=config.DAILY_PERIOD,
+    #
+    # Primary evaluation:
+    # The assignment specifies a 24-hour forecast horizon. Therefore,
+    # the first 24 observations of the 14-day hold-out period are used
+    # as the primary evaluation window.
+    results_24h = evaluation.evaluate_all(
+        forecasts=forecasts,
+        y_true=test_24,
+        y_train=train,
+        seasonality=config.DAILY_PERIOD,
     )
-    print("\nModel comparison:")
-    print(results_df.round(3))
+
+    print("\n=== Primary 24-hour model comparison ===")
+    print(results_24h.round(3))
+    
+    
+        # Identify the strongest benchmark using the primary 24-hour evaluation.
+    benchmark_names = [
+        "mean",
+        "naive",
+        "seasonal_naive_daily",
+        "seasonal_naive_weekly",
+        "drift",
+    ]
+
+    benchmark_results_24h = results_24h[
+        results_24h["model"].isin(benchmark_names)
+    ]
 
     strongest_benchmark = (
-        results_df[results_df["model"].isin(
-            ["mean", "naive", "seasonal_naive_daily", "seasonal_naive_weekly", "drift"]
-        )]
+        benchmark_results_24h
         .sort_values("MASE")
         .iloc[0]["model"]
     )
-    print(f"\nStrongest benchmark model: {strongest_benchmark}")
+
+    print(
+        f"\nStrongest benchmark based on 24-hour evaluation: "
+        f"{strongest_benchmark}"
+    )
+
+    # Extended evaluation:
+    # The complete 14-day / 336-hour hold-out period is also retained
+    # as a long-horizon robustness/stress-test evaluation.
+    results_df = evaluation.evaluate_all(
+        forecasts=forecasts,
+        y_true=test,
+        y_train=train,
+        seasonality=config.DAILY_PERIOD,
+    )
+
+    print("\n=== Extended 336-hour model comparison ===")
+    print(results_df.round(3))
+    
+        # ---------------------------------------------------------
+    # Model comparison plots
+    # ---------------------------------------------------------
+
+    # Primary 24-hour RMSE comparison
+    fig = plotting.plot_model_comparison_bar(
+        results_24h,
+        metric="RMSE",
+        title="Model comparison: RMSE over first 24 hours"
+    )
+
+    fig.savefig(
+        config.FIGURE_DIR / "model_comparison_rmse_24h.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
+
+    # Extended 336-hour RMSE comparison
+    fig = plotting.plot_model_comparison_bar(
+        results_df,
+        metric="RMSE",
+        title="Model comparison: RMSE over 14-day hold-out"
+    )
+
+    fig.savefig(
+        config.FIGURE_DIR / "model_comparison_rmse_336h.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
 
   
     # Save outputs
     
+    # Save outputs
+
+    # ---------------------------------------------------------
+    # Extended 336-hour / 14-day evaluation
+    # ---------------------------------------------------------
+
     forecast_df = pd.DataFrame({"actual": test})
+
     for name, pred in forecasts.items():
         forecast_df[name] = pred.reindex(test.index)
+
     forecast_df["sarimax_lower"] = sarimax_lower
     forecast_df["sarimax_upper"] = sarimax_upper
 
-    forecast_df.to_csv(config.FORECAST_DIR / "all_forecasts.csv")
-    results_df.to_csv(config.METRICS_DIR / "model_comparison.csv", index=False)
+    forecast_df.to_csv(
+        config.FORECAST_DIR / "all_forecasts.csv"
+    )
 
-    fig = plotting.plot_forecasts(train=train, test=test, forecast_df=forecast_df)
-    fig.savefig(config.FIGURE_DIR / "forecast_comparison.png", dpi=300, bbox_inches="tight")
+    results_df.to_csv(
+        config.METRICS_DIR / "model_comparison.csv",
+        index=False
+    )
 
-    fig = plotting.plot_error_diagnostics(test=test, forecast_df=forecast_df)
-    fig.savefig(config.FIGURE_DIR / "error_diagnostics.png", dpi=200, bbox_inches="tight")
+    # ---------------------------------------------------------
+    # Primary 24-hour assignment evaluation
+    # ---------------------------------------------------------
 
-    fig = plotting.plot_model_comparison_bar(results_df, metric="RMSE")
-    fig.savefig(config.FIGURE_DIR / "model_comparison_rmse.png", dpi=200, bbox_inches="tight")
+    forecast_df_24 = forecast_df.iloc[:horizon].copy()
+
+    forecast_df_24.to_csv(
+        config.FORECAST_DIR / "first_24h_forecasts.csv"
+    )
+
+    results_24h.to_csv(
+        config.METRICS_DIR / "model_comparison_24h.csv",
+        index=False
+    )
+    
+        # ---------------------------------------------------------
+    # 24-hour forecast plot
+    # ---------------------------------------------------------
+
+    fig = plotting.plot_forecasts(
+        train=train,
+        test=test_24,
+        forecast_df=forecast_df_24,
+        context_days=3,
+        title="24-hour appliance energy forecast"
+    )
+
+    fig.savefig(
+        config.FIGURE_DIR / "forecast_comparison_24h.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
 
     print("\nSaved outputs to:", config.OUTPUT_DIR)
 
     return {
-        "results_df": results_df,
-        "forecast_df": forecast_df,
-        "stationarity_df": stationarity_df,
-        "strongest_benchmark": strongest_benchmark,
-        "sarimax_order": best_order,
-        "sarimax_residual_diagnostics": resid_summary,
-    }
+    # Primary assignment evaluation
+    "results_24h": results_24h,
+    "forecast_df_24h": forecast_df_24,
+
+    # Extended 14-day evaluation
+    "results_df": results_df,
+    "forecast_df": forecast_df,
+
+    "stationarity_df": stationarity_df,
+    "strongest_benchmark": strongest_benchmark,
+    "sarimax_order": best_order,
+    "sarimax_residual_diagnostics": resid_summary,
+}

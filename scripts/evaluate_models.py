@@ -36,6 +36,19 @@ def main():
 
     fig = plotting.plot_error_diagnostics(test=test, forecast_df=forecast_df)
     fig.savefig(config.FIGURE_DIR / "error_diagnostics.png", dpi=200, bbox_inches="tight")
+    
+        # 24-hour error comparison
+    fig = plotting.plot_error_diagnostics(
+        test=test_24,
+        forecast_df=forecast_df_24,
+        title="Forecast error by model - first 24 hours"
+    )
+
+    fig.savefig(
+        config.FIGURE_DIR / "error_diagnostics_24h.png",
+        dpi=300,
+        bbox_inches="tight"
+    )
 
 
 if __name__ == "__main__":

@@ -91,15 +91,6 @@ Install the required packages:
 pip install -r requirements.txt
 ```
 
-A minimal `requirements.txt` should include:
-
-```text
-numpy
-pandas
-matplotlib
-scikit-learn
-statsmodels
-```
 
 If using XGBoost:
 
@@ -117,15 +108,14 @@ If using Chronos or TimesFM, additional packages such as `torch`, `transformers`
 
 ## Running the pipeline
 
-The full analysis should be reproducible from the command line.
 
-The main pipeline entry point should be:
+The main pipeline entry point is:
 
 ```bash
 python scripts/run_pipeline.py
 ```
 
-The pipeline should:
+The pipeline :
 
 1. Load or download the dataset.
 2. Clean and prepare the time series.
@@ -140,13 +130,13 @@ The pipeline should:
 
 ## Outputs
 
-The pipeline should save forecasts to:
+The pipeline saves forecasts to:
 
 ```text
 outputs/forecasts/all_forecasts.csv
 ```
 
-This file should contain the actual values and model forecasts:
+This file contains the actual values and model forecasts:
 
 ```text
 actual
@@ -160,13 +150,13 @@ feature_model
 foundation_model
 ```
 
-The pipeline should save model comparison metrics to:
+The pipeline saves model comparison metrics to:
 
 ```text
 outputs/metrics/model_comparison.csv
 ```
 
-This file should contain:
+This file contains:
 
 ```text
 model
@@ -176,7 +166,7 @@ MASE
 Bias
 ```
 
-The pipeline should save figures to:
+The pipeline saves figures to:
 
 ```text
 outputs/figures/
@@ -193,7 +183,7 @@ feature_importance.png
 
 ## Evaluation metrics
 
-All models should be evaluated on the same test period.
+All models evaluates on the same test period.
 
 Required metrics:
 
@@ -219,7 +209,7 @@ Choosing the final model based only on test-set performance
 Important point:
 
 ```text
-Future time-of-day and day-of-week variables are known in advance. Future indoor sensor and weather variables may not be known in a real operational forecast. If realised future sensor or weather values are used from the test set, the result should be described as a conditional forecast.
+Future time-of-day and day-of-week variables are known in advance. Future indoor sensor and weather variables may not be known in a real operational forecast. If realised future sensor or weather values are used from the test set, the result are described as a conditional forecast.
 ```
 
 

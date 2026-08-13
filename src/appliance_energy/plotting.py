@@ -64,10 +64,24 @@ def plot_forecasts(train: pd.Series, test: pd.Series, forecast_df: pd.DataFrame,
     )
     test.plot(ax=ax, label="Actual (test)", linewidth=2.2, color="black")
 
-    for col in forecast_df.columns:
-        if col == "actual":
-            continue
-        forecast_df[col].plot(ax=ax, label=col, alpha=0.85)
+    forecast_columns = [
+        "mean",
+        "naive",
+        "seasonal_naive_daily",
+        "seasonal_naive_weekly",
+        "drift",
+        "sarimax",
+        "feature_model",
+        "foundation_model",
+    ]
+
+    for col in forecast_columns:
+        if col in forecast_df.columns:
+            forecast_df[col].plot(
+                ax=ax,
+                label=col,
+                alpha=0.85
+            )
 
     ax.set_title(title)
     ax.set_xlabel("Date")
